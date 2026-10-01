@@ -364,35 +364,43 @@
           <textarea id="new-question" rows="3" placeholder="输入题目完整内容..." class="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none"></textarea>
         </div>
 
-        <!-- 错题图片采集 (支持本地相册与实时拍照) -->
+        <!-- 错题图片采集 (支持多张图片、相册图库、实时拍照与自动文字识别) -->
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1.5 flex items-center justify-between">
-            <span>错题照片/原卷截图 (Question Image)</span>
-            <span class="text-[11px] text-slate-400 font-normal">支持本地图库 / 实时拍照</span>
-          </label>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-bold text-slate-500">错题照片/原卷截图 (支持多张图片)</label>
+            <span id="ocr-status-badge" class="hidden text-[11px] font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+              <i class="fa-solid fa-spinner fa-spin"></i>
+              <span>AI 文字识别中...</span>
+            </span>
+          </div>
+
           <div class="grid grid-cols-2 gap-2 mb-2">
-            <!-- 按钮1：从本地相册选择 -->
+            <!-- 按钮1：从本地相册选择多张 -->
             <label class="flex items-center justify-center gap-2 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer transition-all text-xs font-bold text-slate-700 dark:text-slate-200 shadow-sm">
               <i class="fa-solid fa-images text-indigo-600 dark:text-indigo-400"></i>
-              <span>本地相册选择</span>
-              <input type="file" id="image-gallery-input" accept="image/*" class="hidden">
+              <span>本地相册 (可多选)</span>
+              <input type="file" id="image-gallery-input" accept="image/*" multiple class="hidden">
             </label>
             <!-- 按钮2：手机/iPad/电脑直接拍照 -->
             <label class="flex items-center justify-center gap-2 py-2.5 px-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 rounded-xl cursor-pointer transition-all text-xs font-bold text-indigo-700 dark:text-indigo-300 shadow-sm">
               <i class="fa-solid fa-camera text-indigo-600 dark:text-indigo-400"></i>
-              <span>直接拍照上传</span>
+              <span>拍照追加图片</span>
               <input type="file" id="image-camera-input" accept="image/*" capture="environment" class="hidden">
             </label>
           </div>
 
-          <!-- 图片预览与清除区域 -->
-          <div id="image-preview-container" class="hidden relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 max-h-48 flex items-center justify-center group">
-            <img id="image-preview" src="" alt="预览图" class="w-full h-44 object-contain">
-            <button id="clear-image-btn" type="button" class="absolute top-2 right-2 w-7 h-7 bg-black/70 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors" title="移除图片">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
+          <!-- 多图预览网格 -->
+          <div id="multi-images-preview-grid" class="hidden grid grid-cols-3 gap-2 p-2 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl mb-2 max-h-48 overflow-y-auto">
+            <!-- 动态注入每张图片的缩略图与删除按钮 -->
           </div>
-          <input type="hidden" id="new-image" value="">
+
+          <div class="flex items-center justify-between">
+            <button type="button" id="trigger-ocr-btn" class="hidden text-xs px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/80 text-indigo-600 dark:text-indigo-300 rounded-lg font-bold border border-indigo-200 dark:border-indigo-800 flex items-center gap-1.5 transition-all">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>识别图片文字填入题目 (OCR)</span>
+            </button>
+            <span id="img-count-hint" class="text-[11px] text-slate-400 ml-auto">已选 0 张</span>
+          </div>
         </div>
 
         <div>
@@ -466,6 +474,38 @@
   </div>
 
   <!-- 引用核心逻辑 -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="app.js"></script>
 </body>
-</html>
+</html><div class="mb-4">
+              <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-2">
+                📸 上传题目图片 (支持多张图片，可拍照或从相册多选)
+              </label>
+              
+              <div class="flex items-center gap-3 mb-3">
+                <label class="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 rounded-xl border border-dashed border-indigo-200 dark:border-indigo-800 cursor-pointer transition-all text-xs font-bold">
+                  <i class="fa-solid fa-images"></i>
+                  <span>从相册选择 (多张)</span>
+                  <input type="file" id="image-gallery-input" accept="image/*" multiple class="hidden">
+                </label>
+                
+                <label class="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-violet-50 dark:bg-violet-950/60 hover:bg-violet-100 text-violet-600 dark:text-violet-400 rounded-xl border border-dashed border-violet-200 dark:border-violet-800 cursor-pointer transition-all text-xs font-bold">
+                  <i class="fa-solid fa-camera"></i>
+                  <span>拍照上传 (可连续拍)</span>
+                  <input type="file" id="image-camera-input" accept="image/*" capture="environment" class="hidden">
+                </label>
+              </div>
+
+              <!-- OCR 识别状态指示栏 -->
+              <div id="ocr-status-box" class="hidden p-3 mb-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800 text-xs text-amber-700 dark:text-amber-300 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <i class="fa-solid fa-wand-magic-sparkles text-amber-500 animate-spin"></i>
+                  <span id="ocr-status-text">AI 正在自动识别图片中的文字并填入题目内容...</span>
+                </div>
+                <span id="ocr-progress" class="font-mono font-bold">0%</span>
+              </div>
+
+              <!-- 多图预览网格 -->
+              <div id="multi-image-preview-grid" class="grid grid-cols-3 gap-2.5 mb-2"></div>
+            </div>
+            
