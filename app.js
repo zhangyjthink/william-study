@@ -4,11 +4,41 @@
  * Student: 怀谦 (William, 8yo, G3 International School)
  */
 
-// ===================== 1. 严格手动登录门禁 (必须手动输入) =====================
+// ===================== 1. 严格手动登录门禁与数学算术验证码 =====================
 const AUTH_CREDENTIALS = {
   user: 'william',
   pass: '8888'
 };
+
+let currentCaptchaAnswer = null;
+
+// 动态生成数学算术图形验证码 (如 5 + 5 = ?, 12 - 4 = ?, 3 x 4 = ?)
+function generateCaptcha() {
+  const operations = ['+', '-', 'x'];
+  const op = operations[Math.floor(Math.random() * operations.length)];
+  let num1, num2, ans;
+
+  if (op === '+') {
+    num1 = Math.floor(Math.random() * 15) + 2;
+    num2 = Math.floor(Math.random() * 15) + 2;
+    ans = num1 + num2;
+  } else if (op === '-') {
+    num1 = Math.floor(Math.random() * 15) + 10;
+    num2 = Math.floor(Math.random() * 9) + 1;
+    ans = num1 - num2;
+  } else {
+    num1 = Math.floor(Math.random() * 8) + 2;
+    num2 = Math.floor(Math.random() * 7) + 2;
+    ans = num1 * num2;
+  }
+
+  currentCaptchaAnswer = ans;
+  const qEl = document.getElementById('captcha-question');
+  if (qEl) qEl.innerText = `${num1} ${op} ${num2} = ?`;
+
+  const capInput = document.getElementById('auth-captcha-input');
+  if (capInput) capInput.value = '';
+}
 
 // 严禁自动登录，会话仅保存在当前浏览器的 SessionStorage（关网页即锁）
 function checkAuth() {
@@ -16,11 +46,11 @@ function checkAuth() {
   const guard = document.getElementById('auth-guard');
   if (!isAuthed) {
     if (guard) guard.classList.remove('hidden');
-    // 清空任何可能的预填充输入
     const uInput = document.getElementById('auth-user-input');
     const pInput = document.getElementById('auth-pass-input');
     if (uInput) uInput.value = '';
     if (pInput) pInput.value = '';
+    generateCaptcha();
   } else {
     if (guard) guard.classList.add('hidden');
   }
@@ -29,10 +59,29 @@ function checkAuth() {
 function handleLoginSubmit() {
   const uInput = document.getElementById('auth-user-input');
   const pInput = document.getElementById('auth-pass-input');
+  const cInput = document.getElementById('auth-captcha-input');
   const errBox = document.getElementById('auth-err-msg');
 
   const u = uInput ? uInput.value.trim() : '';
   const p = pInput ? pInput.value.trim() : '';
+  const c = cInput ? parseInt(cInput.value.trim(), 10) : NaN;
+
+  if (!u || !p) {
+    if (errBox) {
+      errBox.innerText = '⚠️ 请完整输入用户名与密码';
+      errBox.classList.remove('hidden');
+    }
+    return;
+  }
+
+  if (isNaN(c) || c !== currentCaptchaAnswer) {
+    if (errBox) {
+      errBox.innerText = '⚠️ 安全验证码计算错误，请重新计算';
+      errBox.classList.remove('hidden');
+    }
+    generateCaptcha();
+    return;
+  }
 
   if (u === AUTH_CREDENTIALS.user && p === AUTH_CREDENTIALS.pass) {
     sessionStorage.setItem('william_auth_token', 'verified_session');
@@ -41,9 +90,10 @@ function handleLoginSubmit() {
     if (guard) guard.classList.add('hidden');
   } else {
     if (errBox) {
-      errBox.innerText = '⚠️ 用户名或密码错误，请手动重新输入（提示: william / 8888）';
+      errBox.innerText = '⚠️ 用户名或密码错误，请检查并手动重新输入';
       errBox.classList.remove('hidden');
     }
+    generateCaptcha();
   }
 }
 
@@ -536,6 +586,68 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const authSubmitBtn = document.getElementById('auth-submit-btn');
   if (authSubmitBtn) authSubmitBtn.addEventListener('click', handleLoginSubmit);
+  // 绑定验证码刷新与回车提交
+  const refreshCaptchaBtn = document.getElementById('refresh-captcha-btn');
+  const captchaWrap = document.getElementById('captcha-canvas-wrap');
+  const captchaInput = document.getElementById('auth-captcha-input');
+  if (refreshCaptchaBtn) refreshCaptchaBtn.onclick = generateCaptcha;
+  if (captchaWrap) captchaWrap.onclick = generateCaptcha;
+  if (captchaInput) {
+    captchaInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handleLoginSubmit();
+    });
+  }
+
+  // 绑定图片选择 (本地相册 & 实时拍照)
+  const galleryInput = document.getElementById('image-gallery-input');
+  const cameraInput = document.getElementById('image-camera-input');
+  const imgPreviewContainer = document.getElementById('image-preview-container');
+  const imgPreview = document.getElementById('image-preview');
+  const hiddenImgInput = document.getElementById('new-image');
+  const clearImgBtn = document.getElementById('clear-image-btn');
+
+  function handleImageFile(file) {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('请选择有效的图片文件');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      if (imgPreview) imgPreview.src = dataUrl;
+      if (hiddenImgInput) hiddenImgInput.value = dataUrl;
+      if (imgPreviewContainer) imgPreviewContainer.classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  if (galleryInput) {
+    galleryInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleImageFile(e.target.files[0]);
+      }
+    });
+  }
+
+  if (cameraInput) {
+    cameraInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleImageFile(e.target.files[0]);
+      }
+    });
+  }
+
+  if (clearImgBtn) {
+    clearImgBtn.onclick = () => {
+      if (imgPreview) imgPreview.src = '';
+      if (hiddenImgInput) hiddenImgInput.value = '';
+      if (imgPreviewContainer) imgPreviewContainer.classList.add('hidden');
+      if (galleryInput) galleryInput.value = '';
+      if (cameraInput) cameraInput.value = '';
+    };
+  }
+
 
   const authPassInput = document.getElementById('auth-pass-input');
   if (authPassInput) {
