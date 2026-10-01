@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>William's Mastery Quest - 怀谦专属错题自愈与成长系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap');
+    body { font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif; }
+    .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); }
+    .dark .glass { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-full flex flex-col transition-colors duration-200">
+
+  <!-- ================= 严格手动安全认证遮罩 (每次必手动输入) ================= -->
+  <div id="auth-guard" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
+      <div class="absolute -top-12 -right-12 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+      
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-violet-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-lg shadow-indigo-500/30">
+          <i class="fa-solid fa-user-astronaut"></i>
+        </div>
+        <h2 class="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">William's Mastery Quest</h2>
+        <p class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold tracking-wide uppercase mt-1">怀谦专属错题自愈空间 · 安全访问门禁</p>
+        <p class="text-xs text-slate-400 dark:text-slate-500 mt-2">🔒 为保护个人学习隐私与作业数据，每次访问必须手动验证身份</p>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">用户名 (Username)</label>
+          <div class="relative">
+            <i class="fa-solid fa-user absolute left-4 top-3.5 text-slate-400 text-sm"></i>
+            <input type="text" id="auth-user-input" autocomplete="off" placeholder="请输入专属账号" class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">安全密码 (Password)</label>
+          <div class="relative">
+            <i class="fa-solid fa-lock absolute left-4 top-3.5 text-slate-400 text-sm"></i>
+            <input type="password" id="auth-pass-input" autocomplete="off" placeholder="请输入安全密码" class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+          </div>
+        </div>
+
+        <div id="auth-err-msg" class="hidden text-xs text-rose-500 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 p-2.5 rounded-xl text-center font-medium"></div>
+
+        <button id="auth-submit-btn" class="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/25 transition-all text-sm flex items-center justify-center gap-2">
+          <span>进入学习空间 (Enter Space)</span>
+          <i class="fa-solid fa-arrow-right text-xs"></i>
+        </button>
+      </div>
+
+      <div class="mt-6 text-center text-xs text-slate-400">
+        导师：<span class="text-indigo-600 dark:text-indigo-400 font-semibold">秋夜老师</span> · 陪伴怀谦智慧探索
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 顶部导航栏 ================= -->
+  <header class="sticky top-0 z-40 border-b border-slate-200/80 dark:border-slate-800/80 glass">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center font-black text-lg shadow-md shadow-indigo-500/20">
+          W
+        </div>
+        <div>
+          <span class="font-extrabold text-base tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+            William's Mastery Quest
+            <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-semibold">G3 美式国际</span>
+          </span>
+          <p class="text-xs text-slate-500 dark:text-slate-400">错题自愈 · 深度探究 · 变式提高</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <!-- 积分与勋章统计 -->
+        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl">
+          <i class="fa-solid fa-crown text-amber-500 text-sm"></i>
+          <span class="text-xs font-bold text-amber-700 dark:text-amber-300" id="header-xp">0 XP</span>
+        </div>
+        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl">
+          <i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
+          <span class="text-xs font-bold text-emerald-700 dark:text-emerald-300" id="header-mastered">已攻克: 0 题</span>
+        </div>
+
+        <!-- 录入新错题按钮 -->
+        <button id="open-add-modal-btn" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5">
+          <i class="fa-solid fa-plus"></i>
+          <span>收集新错题</span>
+        </button>
+
+        <!-- 呼出秋夜老师 AI 助手 -->
+        <button id="toggle-ai-drawer-btn" class="px-3.5 py-1.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 animate-pulse">
+          <i class="fa-solid fa-robot"></i>
+          <span>请教秋夜老师</span>
+        </button>
+
+        <!-- 主题切换 -->
+        <button id="theme-toggle-btn" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+          <i class="fa-solid fa-moon dark:hidden"></i>
+          <i class="fa-solid fa-sun hidden dark:inline"></i>
+        </button>
+
+        <!-- 安全登出 -->
+        <button id="logout-btn" title="安全退出锁定" class="w-9 h-9 rounded-xl border border-rose-200 dark:border-rose-900/50 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= 主内容区域 ================= -->
+  <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+    
+    <!-- 英雄状态与成就面板 -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div class="p-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-book-open"></i>
+        </div>
+        <div>
+          <div class="text-2xl font-black text-slate-800 dark:text-slate-100" id="stat-total">0</div>
+          <div class="text-xs font-medium text-slate-400">总错题收集数</div>
+        </div>
+      </div>
+
+      <div class="p-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-500 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-hourglass-half"></i>
+        </div>
+        <div>
+          <div class="text-2xl font-black text-amber-600 dark:text-amber-400" id="stat-pending">0</div>
+          <div class="text-xs font-medium text-slate-400">正在攻克中</div>
+        </div>
+      </div>
+
+      <div class="p-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-500 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div>
+          <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400" id="stat-mastered">0</div>
+          <div class="text-xs font-medium text-slate-400">已彻底掌握 (自愈完成)</div>
+        </div>
+      </div>
+
+      <div class="p-5 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-3xl text-white shadow-lg shadow-indigo-500/20 flex items-center justify-between">
+        <div>
+          <div class="text-xs font-medium text-indigo-100 uppercase tracking-wider">Mastery XP</div>
+          <div class="text-3xl font-black mt-1" id="stat-xp">0</div>
+          <div class="text-xs text-indigo-200 mt-1">段位: <span class="font-bold text-amber-300">G3 探究学者</span></div>
+        </div>
+        <div class="text-4xl opacity-80">
+          <i class="fa-solid fa-trophy text-amber-300"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- 过滤器与科目切换 -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div class="flex items-center gap-2 bg-slate-200/70 dark:bg-slate-800/70 p-1.5 rounded-2xl">
+        <button class="filter-subject-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-indigo-600 text-white shadow-sm" data-subject="all">
+          全部科目 (All)
+        </button>
+        <button class="filter-subject-btn px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-600 dark:text-slate-300 hover:text-indigo-600" data-subject="Math">
+          📐 数学 (Math)
+        </button>
+        <button class="filter-subject-btn px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-600 dark:text-slate-300 hover:text-indigo-600" data-subject="ELA">
+          📖 英文/阅读 (ELA)
+        </button>
+        <button class="filter-subject-btn px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-600 dark:text-slate-300 hover:text-indigo-600" data-subject="Science">
+          🔬 科学探究 (Science)
+        </button>
+      </div>
+
+      <!-- 掌握状态筛选 -->
+      <div class="flex items-center gap-2">
+        <select id="filter-status" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold px-3 py-2 rounded-xl outline-none">
+          <option value="all">全部状态 (All Status)</option>
+          <option value="pending">待攻克 (Pending)</option>
+          <option value="mastered">已掌握 (Mastered)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 错题卡片流 (Grid) -->
+    <div id="mistakes-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- 动态渲染卡片 -->
+    </div>
+
+    <!-- 空白状态展示 -->
+    <div id="empty-state" class="hidden text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
+      <div class="w-16 h-16 bg-indigo-50 dark:bg-indigo-950 text-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">
+        <i class="fa-solid fa-sparkles"></i>
+      </div>
+      <h3 class="text-base font-bold text-slate-800 dark:text-slate-200">太棒了！当前没有任何未攻克的错题</h3>
+      <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">当怀谦在平时作业、Quiz 或 Unit Test 中遇到难题时，点击右上角【收集新错题】记录下来，秋夜老师陪你一起彻底攻克！</p>
+    </div>
+
+  </main>
+
+  <!-- ================= 错题详情与改错交互模态框 ================= -->
+  <div id="detail-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-8">
+      
+      <!-- 弹窗顶栏 -->
+      <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
+        <div class="flex items-center gap-3">
+          <span id="modal-subject-badge" class="px-3 py-1 rounded-xl text-xs font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+            Math
+          </span>
+          <span id="modal-topic" class="text-sm font-bold text-slate-700 dark:text-slate-200">
+            Two-Step Word Problems
+          </span>
+        </div>
+        <button id="close-detail-modal-btn" class="w-8 h-8 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- 弹窗内容体 -->
+      <div class="p-6 overflow-y-auto space-y-6 flex-1">
+        
+        <!-- 题目原题 -->
+        <div class="p-5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">题目原题 (Original Question)</span>
+            <button id="read-question-btn" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+              <i class="fa-solid fa-volume-high"></i>
+              <span>听秋夜老师朗读</span>
+            </button>
+          </div>
+          <p id="modal-question-text" class="text-base font-semibold leading-relaxed text-slate-800 dark:text-slate-100"></p>
+          <div id="modal-question-image-box" class="hidden mt-4 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
+            <img id="modal-question-image" src="" class="max-h-64 mx-auto object-contain">
+          </div>
+        </div>
+
+        <!-- 当时错误原因诊断 -->
+        <div class="p-5 bg-rose-50/60 dark:bg-rose-950/20 rounded-2xl border border-rose-100 dark:border-rose-900/40">
+          <div class="text-xs font-bold text-rose-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>当时为什么做错？(Diagnosis)</span>
+          </div>
+          <p id="modal-wrong-reason" class="text-xs text-rose-700 dark:text-rose-300"></p>
+        </div>
+
+        <!-- 秋夜老师启发式思维梯子 (Scaffolding Hints) -->
+        <div class="p-5 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-lightbulb"></i>
+              <span>秋夜老师的启发提示 (Scaffolding Hints)</span>
+            </div>
+            <button id="ask-ai-this-btn" class="text-xs font-bold px-2.5 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 flex items-center gap-1">
+              <i class="fa-solid fa-comments"></i>
+              <span>与秋夜老师讨论这题</span>
+            </button>
+          </div>
+          <div id="modal-hints-list" class="space-y-2 text-xs leading-relaxed text-slate-700 dark:text-slate-300"></div>
+        </div>
+
+        <!-- 怀谦订正输入区 -->
+        <div class="p-5 bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
+          <div class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+            怀谦的订正推导与最终答案 (My Correction)
+          </div>
+          <textarea id="modal-correction-input" rows="3" placeholder="写下你的思考步骤和最终答案..." class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-medium"></textarea>
+          
+          <div class="flex items-center justify-between pt-2">
+            <span class="text-xs text-slate-400">订正正确奖励：<span class="font-bold text-amber-500">+10 XP</span></span>
+            <button id="submit-correction-btn" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5">
+              <i class="fa-solid fa-check"></i>
+              <span>提交订正并检验</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 同型变式挑战 (Twin Problems) -->
+        <div id="twin-challenge-box" class="hidden p-5 bg-amber-50/50 dark:bg-amber-950/20 rounded-2xl border border-amber-200 dark:border-amber-900/40 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-fire"></i>
+              <span>秋夜老师为你出的同型挑战题 (Twin Challenge)</span>
+            </span>
+            <span class="text-xs px-2 py-0.5 rounded bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 font-bold">+15 XP</span>
+          </div>
+          <p id="twin-question-text" class="text-sm font-semibold text-slate-800 dark:text-slate-100"></p>
+          <div class="flex gap-2">
+            <input type="text" id="twin-answer-input" placeholder="输入答案" class="flex-1 px-3 py-2 bg-white dark:bg-slate-900 border border-amber-200 dark:border-slate-700 rounded-xl text-xs outline-none">
+            <button id="submit-twin-btn" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold">提交挑战</button>
+          </div>
+          <div id="twin-feedback" class="hidden text-xs font-bold p-2 rounded-lg"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 收集新错题录入模态框 ================= -->
+  <div id="add-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 my-8">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <h3 class="font-bold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-plus-circle text-indigo-600"></i>
+          <span>收集新错题 (Log New Mistake)</span>
+        </h3>
+        <button id="close-add-modal-btn" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">科目 (Subject)</label>
+            <select id="new-subject" class="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold outline-none">
+              <option value="Math">📐 数学 (Math)</option>
+              <option value="ELA">📖 英文阅读 (ELA)</option>
+              <option value="Science">🔬 科学 (Science)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">所属单元/考点 (Topic)</label>
+            <input type="text" id="new-topic" placeholder="例如: Fractions / Word Problem" class="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1">题目文字内容 (Question Text)</label>
+          <textarea id="new-question" rows="3" placeholder="输入题目完整内容..." class="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1">拍照/图片链接 (可选)</label>
+          <input type="text" id="new-image" placeholder="可填图片 URL 或留空" class="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1">当时为什么做错？(错因分析)</label>
+          <input type="text" id="new-reason" placeholder="例如: 没看清是求剩余的；词汇 perimeter 不认识" class="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1">正确标准答案 (Correct Answer)</label>
+          <input type="text" id="new-correct-ans" placeholder="例如: 24 apples" class="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none">
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
+        <button id="cancel-add-btn" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl">取消</button>
+        <button id="confirm-add-btn" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md">保存并加入题库</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 秋夜老师 AI 专属辅导抽屉 (Drawer) ================= -->
+  <div id="ai-drawer" class="fixed inset-y-0 right-0 z-50 w-full sm:w-96 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300">
+    
+    <!-- 抽屉头部 -->
+    <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-indigo-50/50 to-purple-50/50 dark:from-indigo-950/30 dark:to-purple-950/30">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center text-lg shadow-md shadow-indigo-500/20">
+          <i class="fa-solid fa-graduation-cap"></i>
+        </div>
+        <div>
+          <h4 class="font-extrabold text-sm text-slate-800 dark:text-slate-100">秋夜老师 (Coach AI)</h4>
+          <p class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+            <span>随时待命 · 启发式答疑</span>
+          </p>
+        </div>
+      </div>
+      <button id="close-ai-drawer-btn" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 flex items-center justify-center">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- 问答消息列表 -->
+    <div id="ai-chat-messages" class="flex-1 p-4 overflow-y-auto space-y-4 text-xs">
+      <!-- 问候语 -->
+      <div class="flex items-start gap-2.5">
+        <div class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 text-xs">
+          秋
+        </div>
+        <div class="p-3.5 bg-indigo-50 dark:bg-slate-800/90 rounded-2xl rounded-tl-sm text-slate-800 dark:text-slate-200 border border-indigo-100 dark:border-slate-700 leading-relaxed max-w-[85%]">
+          嗨，William！我是你的专属导师秋夜老师。✨<br><br>
+          在平时的数学、英语阅读或者科学题目里，遇到任何看不懂的句子、不会算的步骤，随时在这里问我！我不直接给你答案，但我会带着你一步步把题目拆解明白！
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部输入栏 -->
+    <div class="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+      <div class="flex items-center gap-2">
+        <input type="text" id="ai-input" placeholder="输入问题或说'我不懂这道题'..." class="flex-1 px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500">
+        <button id="ai-send-btn" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </div>
+      <div class="flex items-center justify-between mt-2 text-[10px] text-slate-400 px-1">
+        <span>支持中英双语提问</span>
+        <span>美式国际学校 G3 定制</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 引用核心逻辑 -->
+  <script src="app.js"></script>
+</body>
+</html>
