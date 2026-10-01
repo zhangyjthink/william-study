@@ -348,12 +348,30 @@ function openDetailModal(item) {
   document.getElementById('modal-wrong-reason').innerText = item.wrongReason;
 
   const imgBox = document.getElementById('modal-question-image-box');
-  const imgEl = document.getElementById('modal-question-image');
-  if (item.image) {
-    imgEl.src = item.image;
-    imgBox.classList.remove('hidden');
-  } else {
-    imgBox.classList.add('hidden');
+  const imagesGrid = document.getElementById('modal-images-grid');
+  const allImgs = (item.images && item.images.length > 0) ? item.images : (item.image ? [item.image] : []);
+
+  if (imgBox) {
+    if (allImgs.length > 0) {
+      imgBox.classList.remove('hidden');
+      if (imagesGrid) {
+        imagesGrid.innerHTML = '';
+        allImgs.forEach((src) => {
+          const div = document.createElement('div');
+          div.className = 'group relative aspect-video rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 cursor-pointer shadow-sm hover:shadow-md transition-all';
+          div.innerHTML = `
+            <img src="${src}" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200">
+            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <span class="text-xs text-white font-bold bg-black/60 px-2.5 py-1 rounded-md backdrop-blur-sm"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>点击放大查看</span>
+            </div>
+          `;
+          div.onclick = () => window.openImageLightbox(src);
+          imagesGrid.appendChild(div);
+        });
+      }
+    } else {
+      imgBox.classList.add('hidden');
+    }
   }
 
   // 渲染启发梯子
@@ -598,148 +616,131 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 绑定图片选择 (本地相册 & 实时拍照)
+    // 全新多图管理引擎与高清大图查看器 (Multi-Image & Fullview Lightbox)
+  window.uploadedImagesList = [];
+
   const galleryInput = document.getElementById('image-gallery-input');
   const cameraInput = document.getElementById('image-camera-input');
-  const imgPreviewContainer = document.getElementById('image-preview-container');
-  const imgPreview = document.getElementById('image-preview');
-  const hiddenImgInput = document.getElementById('new-image');
+  const previewContainer = document.getElementById('image-preview-container');
+  const multiGrid = document.getElementById('multi-images-preview-grid');
   const clearImgBtn = document.getElementById('clear-image-btn');
+  const ocrStatus = document.getElementById('ocr-status-box');
+  const questionInput = document.getElementById('new-question');
 
-  function handleImageFile(file) {
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      alert('请选择有效的图片文件');
+  function renderUploadedImages() {
+    if (!multiGrid) return;
+    multiGrid.innerHTML = '';
+    if (window.uploadedImagesList.length === 0) {
+      if (previewContainer) previewContainer.classList.add('hidden');
       return;
     }
+    if (previewContainer) previewContainer.classList.remove('hidden');
+
+    window.uploadedImagesList.forEach((src, idx) => {
+      const item = document.createElement('div');
+      item.className = 'relative group aspect-square rounded-xl overflow-hidden border-2 border-indigo-200 dark:border-indigo-800 bg-slate-100 dark:bg-slate-900 cursor-pointer shadow-sm hover:shadow-md transition-all';
+      item.innerHTML = `
+        <img src="${src}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200">
+        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <span class="text-xs text-white font-bold bg-black/60 px-2 py-1 rounded-md backdrop-blur-sm"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>看大图</span>
+        </div>
+        <button type="button" class="del-btn absolute top-1 right-1 w-6 h-6 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center text-xs shadow-md transition-all z-10" title="删除该图">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      `;
+      // 点击放大看图
+      item.querySelector('img').onclick = () => window.openImageLightbox(src);
+      item.querySelector('.del-btn').onclick = (e) => {
+        e.stopPropagation();
+        window.uploadedImagesList.splice(idx, 1);
+        renderUploadedImages();
+      };
+      multiGrid.appendChild(item);
+    });
+  }
+
+  function compressAndStore(file) {
+    if (!file || !file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-      const dataUrl = e.target.result;
-      if (imgPreview) imgPreview.src = dataUrl;
-      if (hiddenImgInput) hiddenImgInput.value = dataUrl;
-      if (imgPreviewContainer) imgPreviewContainer.classList.remove('hidden');
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 1200;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+        window.uploadedImagesList.push(compressedBase64);
+        renderUploadedImages();
+        runOcrOnImage(compressedBase64);
+      };
+      img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   }
 
+  function handleBatchFiles(fileList) {
+    if (!fileList || fileList.length === 0) return;
+    Array.from(fileList).forEach(file => compressAndStore(file));
+  }
+
+  function runOcrOnImage(dataUrl) {
+    if (window.Tesseract && ocrStatus) {
+      ocrStatus.classList.remove('hidden');
+      window.Tesseract.recognize(dataUrl, 'eng+chi_sim')
+        .then(result => {
+          if (result && result.data && result.data.text) {
+            const txt = result.data.text.trim();
+            if (txt.length > 3 && questionInput) {
+              if (questionInput.value.trim()) {
+                questionInput.value += '\n\n' + txt;
+              } else {
+                questionInput.value = txt;
+              }
+            }
+          }
+        })
+        .catch(err => console.log('OCR识别提示:', err))
+        .finally(() => {
+          if (ocrStatus) ocrStatus.classList.add('hidden');
+        });
+    }
+  }
+
   if (galleryInput) {
     galleryInput.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files[0]) {
-        handleImageFile(e.target.files[0]);
-      }
+      handleBatchFiles(e.target.files);
+      galleryInput.value = '';
     });
   }
 
   if (cameraInput) {
     cameraInput.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files[0]) {
-        handleImageFile(e.target.files[0]);
-      }
+      handleBatchFiles(e.target.files);
+      cameraInput.value = '';
     });
   }
 
   if (clearImgBtn) {
-    clearImgBtn.onclick = () => {
-      if (imgPreview) imgPreview.src = '';
-      if (hiddenImgInput) hiddenImgInput.value = '';
-      if (imgPreviewContainer) imgPreviewContainer.classList.add('hidden');
-      if (galleryInput) galleryInput.value = '';
-      if (cameraInput) cameraInput.value = '';
-    };
-  }
-
-
-  const authPassInput = document.getElementById('auth-pass-input');
-  if (authPassInput) {
-    authPassInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') handleLoginSubmit();
+    clearImgBtn.addEventListener('click', () => {
+      window.uploadedImagesList = [];
+      renderUploadedImages();
     });
   }
 
-  const logoutBtn = document.getElementById('logout-btn');
-  if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
-
-  // 主题切换
-  const themeBtn = document.getElementById('theme-toggle-btn');
-  if (themeBtn) {
-    themeBtn.addEventListener('click', () => {
-      document.documentElement.classList.toggle('dark');
-    });
-  }
-
-  // 科目过滤按钮
-  document.querySelectorAll('.filter-subject-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.filter-subject-btn').forEach(b => {
-        b.className = "filter-subject-btn px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-600 dark:text-slate-300 hover:text-indigo-600";
-      });
-      btn.className = "filter-subject-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-indigo-600 text-white shadow-sm";
-      currentFilterSubject = btn.getAttribute('data-subject') || 'all';
-      renderMistakes();
-    });
-  });
-
-  // 状态筛选
-  const statusSelect = document.getElementById('filter-status');
-  if (statusSelect) {
-    statusSelect.addEventListener('change', (e) => {
-      currentFilterStatus = e.target.value;
-      renderMistakes();
-    });
-  }
-
-  // 错题弹窗操作
-  const closeDetailBtn = document.getElementById('close-detail-modal-btn');
-  if (closeDetailBtn) {
-    closeDetailBtn.addEventListener('click', () => {
-      document.getElementById('detail-modal').classList.add('hidden');
-      if ('speechSynthesis' in window) speechSynthesis.cancel();
-    });
-  }
-
-  const readQBtn = document.getElementById('read-question-btn');
-  if (readQBtn) readQBtn.addEventListener('click', readQuestionSpeech);
-
-  const submitCorrBtn = document.getElementById('submit-correction-btn');
-  if (submitCorrBtn) submitCorrBtn.addEventListener('click', handleCorrectionSubmit);
-
-  const submitTwinBtn = document.getElementById('submit-twin-btn');
-  if (submitTwinBtn) submitTwinBtn.addEventListener('click', handleTwinSubmit);
-
-  const askAiThisBtn = document.getElementById('ask-ai-this-btn');
-  if (askAiThisBtn) {
-    askAiThisBtn.addEventListener('click', () => {
-      if (activeModalMistake) {
-        toggleAIDrawer();
-        const input = document.getElementById('ai-input');
-        if (input) input.value = `秋夜老师，请帮我分析这道【${activeModalMistake.topic}】难题：${activeModalMistake.question.slice(0, 40)}...`;
-      }
-    });
-  }
-
-  // 新错题弹窗
-  const openAddBtn = document.getElementById('open-add-modal-btn');
-  if (openAddBtn) {
-    openAddBtn.addEventListener('click', () => {
-      document.getElementById('add-modal').classList.remove('hidden');
-    });
-  }
-
-  const closeAddBtn = document.getElementById('close-add-modal-btn');
-  if (closeAddBtn) {
-    closeAddBtn.addEventListener('click', () => {
-      document.getElementById('add-modal').classList.add('hidden');
-    });
-  }
-
-  const cancelAddBtn = document.getElementById('cancel-add-btn');
-  if (cancelAddBtn) {
-    cancelAddBtn.addEventListener('click', () => {
-      document.getElementById('add-modal').classList.add('hidden');
-    });
-  }
-
-  const confirmAddBtn = document.getElementById('confirm-add-btn');
   if (confirmAddBtn) confirmAddBtn.addEventListener('click', handleAddNewMistake);
 
   // 秋夜老师抽屉
