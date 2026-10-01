@@ -476,6 +476,20 @@
   <!-- 引用核心逻辑 -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="app.js"></script>
+
+  <!-- 全屏高清大图查看器 (Image Lightbox Viewer) -->
+  <div id="image-lightbox-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/90 backdrop-blur-md p-4 transition-all">
+    <button id="close-lightbox-btn" type="button" class="absolute top-4 right-4 w-11 h-11 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center text-xl transition-all cursor-pointer z-50">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <div class="max-w-4xl max-h-[85vh] flex flex-col items-center justify-center p-2">
+      <img id="lightbox-img" src="" alt="错题大图查看" class="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl border border-white/20">
+      <div class="text-white/80 text-xs mt-3 font-mono flex items-center gap-2">
+        <i class="fa-solid fa-circle-info"></i> 点击空白处或右上角按钮关闭大图
+      </div>
+    </div>
+  </div>
+
 </body>
 </html><div class="mb-4">
               <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-2">
