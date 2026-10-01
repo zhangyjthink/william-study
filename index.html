@@ -47,7 +47,7 @@
           <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">用户名 (Username)</label>
           <div class="relative">
             <i class="fa-solid fa-user absolute left-4 top-3.5 text-slate-400 text-sm"></i>
-            <input type="text" id="auth-user-input" autocomplete="off" placeholder="请输入专属账号" class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+            <input type="text" id="auth-user-input" autocomplete="off" class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
           </div>
         </div>
 
@@ -55,7 +55,23 @@
           <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">安全密码 (Password)</label>
           <div class="relative">
             <i class="fa-solid fa-lock absolute left-4 top-3.5 text-slate-400 text-sm"></i>
-            <input type="password" id="auth-pass-input" autocomplete="off" placeholder="请输入安全密码" class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+            <input type="password" id="auth-pass-input" autocomplete="off" class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+          </div>
+        </div>
+
+        <!-- 图形算术安全验证码 -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">安全验证码 (Security Math Captcha)</label>
+            <button id="refresh-captcha-btn" type="button" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+              <i class="fa-solid fa-rotate-right text-[10px]"></i> 换一题
+            </button>
+          </div>
+          <div class="flex items-center gap-3">
+            <div id="captcha-canvas-wrap" class="px-4 py-2.5 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/60 dark:to-purple-950/60 border border-indigo-200 dark:border-indigo-800/80 rounded-xl flex items-center justify-center font-black text-indigo-700 dark:text-indigo-300 tracking-wider text-base select-none shadow-inner cursor-pointer" title="点击刷新验证码">
+              <span id="captcha-question">5 + 5 = ?</span>
+            </div>
+            <input type="number" id="auth-captcha-input" autocomplete="off" placeholder="计算结果" class="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-center">
           </div>
         </div>
 
@@ -348,9 +364,35 @@
           <textarea id="new-question" rows="3" placeholder="输入题目完整内容..." class="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none"></textarea>
         </div>
 
+        <!-- 错题图片采集 (支持本地相册与实时拍照) -->
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">拍照/图片链接 (可选)</label>
-          <input type="text" id="new-image" placeholder="可填图片 URL 或留空" class="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none">
+          <label class="block text-xs font-bold text-slate-500 mb-1.5 flex items-center justify-between">
+            <span>错题照片/原卷截图 (Question Image)</span>
+            <span class="text-[11px] text-slate-400 font-normal">支持本地图库 / 实时拍照</span>
+          </label>
+          <div class="grid grid-cols-2 gap-2 mb-2">
+            <!-- 按钮1：从本地相册选择 -->
+            <label class="flex items-center justify-center gap-2 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer transition-all text-xs font-bold text-slate-700 dark:text-slate-200 shadow-sm">
+              <i class="fa-solid fa-images text-indigo-600 dark:text-indigo-400"></i>
+              <span>本地相册选择</span>
+              <input type="file" id="image-gallery-input" accept="image/*" class="hidden">
+            </label>
+            <!-- 按钮2：手机/iPad/电脑直接拍照 -->
+            <label class="flex items-center justify-center gap-2 py-2.5 px-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 rounded-xl cursor-pointer transition-all text-xs font-bold text-indigo-700 dark:text-indigo-300 shadow-sm">
+              <i class="fa-solid fa-camera text-indigo-600 dark:text-indigo-400"></i>
+              <span>直接拍照上传</span>
+              <input type="file" id="image-camera-input" accept="image/*" capture="environment" class="hidden">
+            </label>
+          </div>
+
+          <!-- 图片预览与清除区域 -->
+          <div id="image-preview-container" class="hidden relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 max-h-48 flex items-center justify-center group">
+            <img id="image-preview" src="" alt="预览图" class="w-full h-44 object-contain">
+            <button id="clear-image-btn" type="button" class="absolute top-2 right-2 w-7 h-7 bg-black/70 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors" title="移除图片">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+          <input type="hidden" id="new-image" value="">
         </div>
 
         <div>
