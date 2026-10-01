@@ -1,3 +1,4 @@
+let uploadedImages = [];
 /**
  * William's Mastery Quest - Core Interactive Engine
  * Tutor: 秋夜老师 (Coach AI)
@@ -557,7 +558,8 @@ function handleAddNewMistake() {
   const subject = document.getElementById('new-subject').value;
   const topic = document.getElementById('new-topic').value.trim() || '综合练习题';
   const question = document.getElementById('new-question').value.trim();
-  const image = document.getElementById('new-image').value.trim();
+  const imageEl = document.getElementById('new-image');
+  const image = imageEl ? imageEl.value.trim() : (uploadedImages[0] || '');
   const wrongReason = document.getElementById('new-reason').value.trim() || '审题或计算失误';
   const correctAnswer = document.getElementById('new-correct-ans').value.trim() || '详见解析';
 
